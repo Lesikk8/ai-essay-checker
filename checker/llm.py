@@ -1,6 +1,7 @@
 """Інтеграція з Gemini API: перевірка есе англійською мовою."""
 import logging
 import os
+import time
 from typing import List
 
 from google import genai
@@ -101,13 +102,22 @@ def check_essay(essay: str, essay_type: str, topic: str) -> tuple[EssayReport, s
     if not api_key:
         raise CheckError("Не задано GEMINI_API_KEY.")
 
-    client = genai.Client(api_key=api_key)
+    # Обмеження часу на одну спробу і без довгих внутрішніх повторів SDK:
+    # якщо модель не встигла — переходимо до наступної.
+    client = genai.Client(
+        api_key=api_key,
+        http_options=types.HttpOptions(
+            timeout=int(os.environ.get("GEMINI_TIMEOUT_MS", "40000")),
+            retry_options=types.HttpRetryOptions(attempts=1),
+        ),
+    )
     task = f"Task type: {essay_type}\nTopic: {topic or 'not specified'}\n\nEssay:\n{essay}"
 
     last_error = None
     for model in _models():
         try:
             log.info("[gemini] перевірка: %s", model)
+            started = time.monotonic()
             response = client.models.generate_content(
                 model=model,
                 contents=[task],
@@ -116,12 +126,13 @@ def check_essay(essay: str, essay_type: str, topic: str) -> tuple[EssayReport, s
                     response_mime_type="application/json",
                     response_schema=EssayReport,
                     temperature=0.2,
+                    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
                 ),
             )
             report = response.parsed
             if report is None:
                 report = EssayReport.model_validate_json(response.text)
-            log.info("[gemini] %s відповіла", model)
+            log.info("[gemini] %s відповіла за %.1f с", model, time.monotonic() - started)
             return clean_report(report, essay), model
         except errors.APIError as e:
             last_error = e
@@ -129,5 +140,9 @@ def check_essay(essay: str, essay_type: str, topic: str) -> tuple[EssayReport, s
             if e.code in (404, 429, 500, 503, 504):
                 continue  # пробуємо наступну модель
             raise CheckError(f"Gemini API повернув помилку {e.code}: {e.message}") from e
+        except Exception as e:  # тайм-аут, обрив з'єднання, некоректний JSON
+            last_error = e
+            log.warning("[gemini] %s - %s: %s", model, type(e).__name__, e)
+            continue
 
     raise CheckError(f"Усі моделі зараз недоступні, спробуйте за хвилину ({last_error}).")
