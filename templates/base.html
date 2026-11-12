@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AI Essay Checker{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="{{ url_for('index') }}"><span class="dot"></span>AI Essay Checker</a>
+    <nav>
+      <a href="{{ url_for('index') }}">Перевірити есе</a>
+      <a href="{{ url_for('history') }}">Мій прогрес</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>Gemini API · Flask · Firestore · Google Cloud Run — PoC, Певна Олеся, ТК-41</footer>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Результат — AI Essay Checker{% endblock %}
+{% block content %}
+<section class="hero small">
+  <h1>Результат перевірки</h1>
+  <p>{{ essay_type }}{% if form.topic %} · «{{ form.topic }}»{% endif %} · {{ words }} слів{% if form.student %} · {{ form.student }}{% endif %}</p>
+</section>
+
+<div class="scores">
+  <div class="score level"><span>Рівень CEFR</span><b>{{ report.cefr_level }}</b></div>
+  {% for key, name in criteria %}
+  <div class="score"><span>{{ name }}</span><b>{{ report[key] }}<small> / 5</small></b>
+    <i class="bar"><i style="width: {{ report[key] * 20 }}%"></i></i></div>
+  {% endfor %}
+  <div class="score total"><span>Разом</span><b>{{ total }}<small> / 20</small></b></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Текст з позначеними помилками</h2>
+    <div class="essay">{{ highlighted }}</div>
+  </div>
+
+  <div class="card">
+    <h2>Помилки <span class="count">{{ report.mistakes|length }}</span></h2>
+    {% if report.mistakes %}
+    <ol class="mistakes">
+      {% for m in report.mistakes %}
+      <li>
+        <div class="fix"><s>{{ m.fragment }}</s> → <b>{{ m.correction }}</b> <em class="tag tag-{{ m.category|lower }}">{{ m.category }}</em></div>
+        <p>{{ m.rule }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <p class="muted">Помилок не знайдено. Чудова робота!</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Сильні сторони</h2>
+    <ul class="plain">{% for s in report.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+  </div>
+  <div class="card">
+    <h2>Відгук і поради</h2>
+    <p>{{ report.feedback }}</p>
+  </div>
+</div>
+
+<p class="meta">Модель: {{ model }}{% if saved %} · збережено у Firestore ({{ saved }}) · <a href="{{ url_for('history', student=form.student) }}">переглянути прогрес</a>{% endif %}</p>
+<p><a class="button-link" href="{{ url_for('index') }}">← Перевірити інше есе</a></p>
+{% endblock %}

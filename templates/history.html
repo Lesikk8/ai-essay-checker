@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Мій прогрес — AI Essay Checker{% endblock %}
+{% block content %}
+<section class="hero small">
+  <h1>Мій прогрес</h1>
+  <p>Історія перевірок зберігається у Firestore.</p>
+</section>
+
+{% if not firestore %}
+<div class="alert">Firestore не підключено: історія працює лише після розгортання в Google Cloud.</div>
+{% endif %}
+
+<form class="card form inline" method="get" action="{{ url_for('history') }}">
+  <input name="student" value="{{ student }}" placeholder="Ім’я студента" required>
+  <button type="submit">Показати</button>
+</form>
+
+{% if student and items %}
+<div class="card">
+  <h2>{{ student }} · {{ items|length }} перевірок</h2>
+  <div class="chart">
+    {% for it in items %}
+    <div class="col" title="{{ it.created.strftime('%d.%m %H:%M') }}">
+      <b>{{ it.total }}</b>
+      <i style="height: {{ it.total * 5 }}%"></i>
+      <span>{{ it.created.strftime('%d.%m') }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <table>
+    <tr><th>Дата</th><th>Тип</th><th>Тема</th><th>CEFR</th><th>Бали</th><th>Помилок</th></tr>
+    {% for it in items|reverse %}
+    <tr>
+      <td>{{ it.created.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td>{{ essay_types.get(it.essay_type, it.essay_type) }}</td>
+      <td>{{ it.topic or '—' }}</td>
+      <td><b>{{ it.report.cefr_level }}</b></td>
+      <td>{{ it.total }} / 20</td>
+      <td>{{ it.report.mistakes|length }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% elif student %}
+<p class="muted">Для «{{ student }}» ще немає збережених перевірок.</p>
+{% endif %}
+{% endblock %}

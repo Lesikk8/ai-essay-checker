@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Перевірка есе англійською</h1>
+  <p>Вставте текст — Gemini знайде помилки, пояснить правила українською, оцінить роботу за чотирма критеріями та визначить рівень CEFR.</p>
+</section>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+
+<form class="card form" method="post" action="{{ url_for('check') }}" id="essay-form">
+  <div class="row">
+    <label>Ім’я студента <small>(для історії прогресу, необов’язково)</small>
+      <input name="student" value="{{ form.student or '' }}" placeholder="Напр. Olena K.">
+    </label>
+    <label>Тип завдання
+      <select name="essay_type" required>
+        {% for key, name in essay_types.items() %}
+        <option value="{{ key }}" {% if form.essay_type == key %}selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <label>Тема <small>(необов’язково)</small>
+    <input name="topic" value="{{ form.topic or '' }}" placeholder="Напр. My best holiday">
+  </label>
+  <label>Текст есе
+    <textarea name="essay" rows="12" required placeholder="Paste your essay here...">{{ form.essay or '' }}</textarea>
+  </label>
+  <div class="actions">
+    <span class="hint" id="counter">0 слів · від {{ min_words }} до {{ max_words }}</span>
+    <button type="submit" id="submit">Перевірити</button>
+  </div>
+</form>
+
+<script>
+  const ta = document.querySelector('textarea[name=essay]');
+  const counter = document.getElementById('counter');
+  function count() {
+    const n = (ta.value.match(/[A-Za-z']+/g) || []).length;
+    counter.textContent = n + ' слів · від {{ min_words }} до {{ max_words }}';
+  }
+  ta.addEventListener('input', count); count();
+  document.getElementById('essay-form').addEventListener('submit', () => {
+    const b = document.getElementById('submit');
+    b.disabled = true; b.textContent = 'Gemini перевіряє…';
+  });
+</script>
+{% endblock %}
